@@ -13,9 +13,10 @@ import { PostDto } from '@/types/dto/post.dto';
 interface PostCardProps {
   post: PostDto;
   onClick?: (post: PostDto) => void;
+  onPlay?: (post: PostDto) => void;
 }
 
-export const PostCard = memo(function PostCard({ post, onClick }: PostCardProps) {
+export const PostCard = memo(function PostCard({ post, onClick, onPlay }: PostCardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   const handleCommentClick = () => {
@@ -80,7 +81,8 @@ export const PostCard = memo(function PostCard({ post, onClick }: PostCardProps)
           } active:scale-95 bg-white/90 backdrop-blur-sm`}
           onClick={(e) => {
             e.stopPropagation();
-            // Music play logic
+            e.preventDefault();
+            onPlay?.(post);
           }}
         >
           <Play className="w-7 h-7 text-gray-900 ml-0.5" />
