@@ -10,7 +10,9 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { EmptyState } from '@/components/common/EmptyState';
 import { BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
-import { PostDto } from '@/types/dto/post.dto';
+import { PostDetailDto, PostDto } from '@/types/dto/post.dto';
+import { MusicTrack, useMusicPlayer } from '@/hooks/useMusicPlayer';
+import { MusicPlayerBar } from '@/components/music/MusicPlayerBar';
 
 interface PaginationInfo {
   page: number;
@@ -52,6 +54,7 @@ const SORT_OPTIONS = [
 
 export default function FeedPage() {
   const router = useRouter();
+  const musicPlayer = useMusicPlayer();
   const [posts, setPosts] = useState<PostDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('all');
@@ -62,6 +65,11 @@ export default function FeedPage() {
     totalCount: 0,
     totalPages: 0,
   });
+  const [playerContext, setPlayerContext] = useState<{
+    bookTitle: string;
+    bookCoverUrl?: string | null;
+    playlistLength: number;
+  } | null>(null);
 
   // Fetch posts
   const fetchPosts = async () => {
@@ -138,6 +146,52 @@ export default function FeedPage() {
     toast.info('스크랩 기능은 Phase 9에서 구현됩니다.');
   }, []);
 
+  const handlePlay = useCallback(async (post: PostDto) => {
+    try {
+      const response = await fetch(`/api/posts/${post.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch post detail for playback');
+      }
+
+      const data = await response.json();
+      const detail: PostDetailDto = data.post;
+
+      if (!detail.playlist || detail.playlist.length === 0) {
+        toast.warning('재생할 트랙이 없습니다.');
+        return;
+      }
+
+      const playlistTracks: MusicTrack[] = detail.playlist.map((track) => ({
+        id: track.id,
+        version: track.version,
+        title: track.title,
+        fileUrl: track.fileUrl,
+        genre: track.genre ?? undefined,
+        mood: track.mood ?? undefined,
+        tempo: track.tempo ?? undefined,
+        duration: track.duration ?? 0,
+        logType: track.logType,
+      }));
+
+      await musicPlayer.playPlaylist(playlistTracks, 0);
+      setPlayerContext({
+        bookTitle: detail.journey.bookTitle,
+        bookCoverUrl: detail.journey.bookCoverUrl ?? null,
+        playlistLength: playlistTracks.length,
+      });
+
+      toast.success('플레이리스트 재생을 시작합니다.');
+    } catch (error) {
+      console.error('Error starting playback from feed:', error);
+      toast.error('음악 재생에 실패했습니다.');
+    }
+  }, [musicPlayer]);
+
+  const handleClosePlayer = useCallback(() => {
+    musicPlayer.clearPlaylist();
+    setPlayerContext(null);
+  }, [musicPlayer]);
+
   return (
     <AppLayout>
       <div className="container mx-auto px-4 section-spacing" style={{ maxWidth: '1600px' }}>
@@ -185,6 +239,7 @@ export default function FeedPage() {
                   key={post.id}
                   post={post}
                   onClick={handlePostClick}
+                  onPlay={handlePlay}
                 />
               ))}
             </div>
@@ -202,6 +257,31 @@ export default function FeedPage() {
           </>
         )}
       </div>
+
+      {musicPlayer.currentTrack && playerContext && (
+        <div className="container mx-auto px-4 pb-6">
+          <MusicPlayerBar
+            trackUrl={musicPlayer.currentTrack.fileUrl}
+            trackTitle={`${playerContext.bookTitle} - ${musicPlayer.currentTrack.title}`}
+            trackVersion={(musicPlayer.currentTrack.version ?? 1).toString()}
+            bookCoverUrl={playerContext.bookCoverUrl ?? undefined}
+            genre={musicPlayer.currentTrack.genre ?? undefined}
+            mood={musicPlayer.currentTrack.mood ?? undefined}
+            onClose={handleClosePlayer}
+            playlistMode={musicPlayer.playlistMode}
+            currentTrackIndex={musicPlayer.currentTrackIndex}
+            totalTracks={playerContext.playlistLength}
+            onPrevious={musicPlayer.skipToPrevious}
+            onNext={musicPlayer.skipToNext}
+            hasNext={musicPlayer.hasNext}
+            hasPrevious={musicPlayer.hasPrevious}
+            externalIsPlaying={musicPlayer.isPlaying}
+            externalCurrentTime={musicPlayer.currentTime}
+            externalDuration={musicPlayer.duration}
+            onTogglePlayPause={musicPlayer.togglePlayPause}
+          />
+        </div>
+      )}
     </AppLayout>
   );
 }
