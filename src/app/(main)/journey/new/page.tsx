@@ -40,6 +40,13 @@ export default function NewJourneyPage() {
         }),
       });
 
+      if (response.status === 401) {
+        toast.dismiss(loadingToast);
+        toast.error('로그인이 필요합니다. 먼저 로그인해 주세요.');
+        router.push('/login');
+        return;
+      }
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
