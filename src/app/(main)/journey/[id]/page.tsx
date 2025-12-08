@@ -432,7 +432,8 @@ export default function JourneyDetailPage() {
       id: track.id,
       title: journey?.book_title || 'Unknown',
       fileUrl: track.file_url,
-      duration: 180, // Default duration (실제 재생 시 자동 감지됨)
+      // duration이 없거나 0이면 최소 1초 이상으로 보정
+      duration: track.duration && track.duration > 0 ? track.duration : 180,
       genre: track.genre || undefined,
       mood: track.mood || undefined,
       tempo: track.tempo ? parseInt(track.tempo) : undefined,

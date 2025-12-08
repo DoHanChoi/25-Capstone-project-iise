@@ -168,7 +168,8 @@ export default function FeedPage() {
         fileUrl: track.fileUrl,
         genre: track.genre || undefined,
         mood: track.mood || undefined,
-        duration: track.duration ?? 0,
+        // duration이 없거나 0이면 최소 1초로 보정 (auto-advance 안전장치)
+        duration: track.duration && track.duration > 0 ? track.duration : 180,
       }));
 
       await musicPlayer.playPlaylist(playlistTracks, 0);

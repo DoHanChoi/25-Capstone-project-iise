@@ -35,7 +35,8 @@ export function PostDetail({
     id: track.id,
     title: `${post.journey.bookTitle} - ${track.title}`,
     fileUrl: track.fileUrl,
-    duration: track.duration || 0,
+    // duration이 없거나 0이면 최소 1초 이상으로 보정
+    duration: track.duration && track.duration > 0 ? track.duration : 180,
     genre: track.genre ?? undefined,
     mood: track.mood ?? undefined,
     tempo: (track as any).tempo ?? undefined,

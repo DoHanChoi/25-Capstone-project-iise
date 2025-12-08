@@ -579,6 +579,8 @@ export class AudioCrossfadeManager {
   private setupAutoAdvance(crossfadeDuration: number, preloadOffset: number) {
     if (!this.currentAudio) return;
 
+    const isValidDuration = (value: number) => Number.isFinite(value) && value > 0;
+
     // ✅ 기존 리스너 정리 후 새로 설정
     this.cleanupAudioListeners(this.currentAudio);
 
@@ -587,6 +589,14 @@ export class AudioCrossfadeManager {
 
       const currentTime = this.currentAudio.currentTime;
       const duration = this.currentAudio.duration;
+
+      // duration이 0/NaN이면 자동 전환 로직을 중단해 오작동 방지
+      if (!isValidDuration(duration)) {
+        this.log(`[AudioCrossfadeManager] Invalid duration detected (duration=${duration}), skipping auto-advance.`);
+        this.onTimeUpdate?.(currentTime, duration);
+        return;
+      }
+
       const timeRemaining = duration - currentTime;
 
       // Emit time update callback
