@@ -258,14 +258,24 @@ export class AudioStateManager {
       throw new Error(`Invalid track index: ${index}`);
     }
 
-    this.log(`⏭️ Skipping to track ${index}`);
+    this.log(`?? Skipping to track ${index}`);
 
-    // 현재 플레이리스트로 재생 재시작
-    await this.playPlaylist(this.currentPlaylist, index);
+    if (!this.activePlayer) {
+      throw new Error('No active player to skip tracks');
+    }
+
+    await this.activePlayer.skipToIndex(index);
+
+    this.updateState({
+      currentTrackIndex: index,
+      currentTime: 0,
+      duration: this.currentPlaylist[index]?.duration || 0,
+      isPlaying: true
+    });
   }
 
   /**
-   * 모든 재생 중지
+   * ?? ?? ??
    */
   public async stopAll(): Promise<void> {
     this.log('🛑 Stopping all playback');
@@ -276,6 +286,15 @@ export class AudioStateManager {
       currentTrackIndex: 0,
       mode: 'single'
     });
+  }
+
+  /**
+   * ?? ??? ??
+   */
+  public seek(positionSeconds: number): void {
+    if (!this.activePlayer) return;
+    this.activePlayer.seek(positionSeconds);
+    this.updateState({ currentTime: positionSeconds });
   }
 
   /**

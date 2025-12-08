@@ -269,33 +269,26 @@ export function useMusicPlayer() {
     }
 
     try {
-      // Convert playlist to audio tracks and play from index
-      const audioTracks = playlist.map(track => ({
-        url: track.fileUrl,
-        duration: track.duration,
-        genre: track.genre,
-        mood: track.mood,
-        tempo: track.tempo
-      }));
-
-      await audioManager.current.playPlaylist(audioTracks, index, {
-        duration: crossfadeEnabled ? crossfadeDuration : 0,
-        preloadOffset: 15,
-        fadeType: 'equalPower'
-      });
-
+      await audioManager.current.skipToTrack(index);
       setCurrentTrackIndex(index);
       setCurrentTrack(playlist[index]);
     } catch (error) {
       console.error('Failed to skip to track:', error);
-      toast.error('트랙 이동에 실패했습니다.');
+      toast.error('?? ??? ??????.');
     }
-  }, [playlist, crossfadeEnabled, crossfadeDuration]);
+  }, [playlist]);
 
   /**
-   * 크로스페이드 설정
+   * 위치 이동 (seek)
    */
-  const configureCrossfade = useCallback((enabled: boolean, duration?: number) => {
+  const seek = useCallback((positionSeconds: number) => {
+    audioManager.current.seek(positionSeconds);
+  }, []);
+
+  /**
+   * ?????? ??
+   */
+const configureCrossfade = useCallback((enabled: boolean, duration?: number) => {
     setCrossfadeEnabled(enabled);
     if (duration !== undefined) {
       setCrossfadeDuration(duration);
@@ -366,6 +359,7 @@ export function useMusicPlayer() {
     skipToNext,
     skipToPrevious,
     skipToTrack,
+    seek,
     configureCrossfade,
     clearPlaylist,
     setVolume,  // ✅ 볼륨 설정

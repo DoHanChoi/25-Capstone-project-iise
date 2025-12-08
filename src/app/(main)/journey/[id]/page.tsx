@@ -826,6 +826,7 @@ export default function JourneyDetailPage() {
             externalCurrentTime={musicPlayer.currentTime}
             externalDuration={musicPlayer.duration}
             onTogglePlayPause={musicPlayer.togglePlayPause}
+            onSeek={musicPlayer.seek}
           />
         )}
       </div>

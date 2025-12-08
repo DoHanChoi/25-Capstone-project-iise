@@ -212,7 +212,7 @@ export async function GET(request: NextRequest) {
       journey: {
         id: post.reading_journeys.id,
         bookTitle: post.reading_journeys.book_title,
-        bookAuthor: post.reading_journeys.book_author,
+        bookAuthor: post.reading_journeys.book_author || 'Unknown',
         bookCoverUrl: post.reading_journeys.book_cover_url,
         bookCategory: post.reading_journeys.book_category,
         rating: post.reading_journeys.rating,

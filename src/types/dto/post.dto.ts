@@ -12,7 +12,8 @@ export interface PostDto {
     id: string;
     bookIsbn?: string | null;
     bookTitle: string;
-    bookAuthor: string | null;
+    // bookAuthor를 항상 문자열로 취급해 타입 충돌을 방지
+    bookAuthor: string;
     bookCoverUrl?: string | null;
     bookCategory?: string | null;
     bookDescription?: string | null;

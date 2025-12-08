@@ -169,7 +169,7 @@ export async function GET(request: NextRequest) {
           id: bookmark.posts.reading_journeys.id,
           bookIsbn: bookmark.posts.reading_journeys.book_isbn,
           bookTitle: bookmark.posts.reading_journeys.book_title,
-          bookAuthor: bookmark.posts.reading_journeys.book_author,
+          bookAuthor: bookmark.posts.reading_journeys.book_author || 'Unknown',
           bookCoverUrl: bookmark.posts.reading_journeys.book_cover_url,
           bookCategory: bookmark.posts.reading_journeys.book_category,
           rating: bookmark.posts.reading_journeys.rating,

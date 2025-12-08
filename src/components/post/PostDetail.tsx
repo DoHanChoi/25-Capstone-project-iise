@@ -11,11 +11,11 @@ import { CommentList } from './CommentList';
 import { BookCover } from '@/components/book/BookCover';
 import { Playlist } from '@/components/music/Playlist';
 import { MusicPlayerBar } from '@/components/music/MusicPlayerBar';
+import { useMusicPlayer } from '@/hooks/useMusicPlayer';
 import { Star, Calendar, Music } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { m } from 'framer-motion';
 import { PostDetailDto, CommentDto } from '@/types/dto/post.dto';
-import { useMusicPlayer } from '@/hooks/useMusicPlayer';
 
 interface PostDetailProps {
   post: PostDetailDto;
@@ -30,14 +30,16 @@ interface MusicTrack {
   genre: string | null;
   mood: string | null;
   duration: number | null;
+  tempo?: number | null;
+  logType?: string | null;
 }
 
 export function PostDetail({
   post,
   currentUserId,
 }: PostDetailProps) {
-  const [comments, setComments] = useState<CommentDto[]>(post.comments);
   const musicPlayer = useMusicPlayer();
+  const [comments, setComments] = useState<CommentDto[]>(post.comments);
 
   const playlistTracks = useMemo<MusicTrack[]>(() => (
     post.playlist.map((track) => ({
@@ -48,13 +50,27 @@ export function PostDetail({
       genre: track.genre ?? null,
       mood: track.mood ?? null,
       duration: track.duration ?? 0,
+      tempo: (track as any).tempo ?? null,
+      logType: (track as any).logType ?? null,
     }))
   ), [post.playlist]);
 
-  const handlePlayMusic = (track: MusicTrack) => {
-    if (playlistTracks.length === 0) return;
-    const startIndex = playlistTracks.findIndex((t) => t.id === track.id);
-    musicPlayer.playPlaylist(playlistTracks, startIndex >= 0 ? startIndex : 0);
+  const toMusicTrack = (track: MusicTrack) => ({
+    id: track.id,
+    title: `${post.journey.bookTitle} - ${track.title}`,
+    fileUrl: track.fileUrl,
+    duration: track.duration || 0,
+    genre: track.genre || undefined,
+    mood: track.mood || undefined,
+    tempo: track.tempo || undefined,
+    artist: post.journey.bookAuthor,
+    albumCover: post.journey.bookCoverUrl || undefined,
+    version: Number(track.version),
+    logType: track.logType || undefined,
+  });
+
+  const handlePlayMusic = async (track: MusicTrack) => {
+    await musicPlayer.playTrack(toMusicTrack(track));
   };
 
   const handleClosePlayer = () => {
@@ -130,7 +146,7 @@ export function PostDetail({
                   <div className="flex items-center gap-1">
                     <Calendar className="w-4 h-4" />
                     <span>
-                      완독: {new Date(post.journey.completedAt).toLocaleDateString('ko-KR')}
+                      완료: {new Date(post.journey.completedAt).toLocaleDateString('ko-KR')}
                     </span>
                   </div>
                 )}
@@ -198,14 +214,15 @@ export function PostDetail({
                 >
                   <Music className="w-5 h-5 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold">독서 플레이리스트</h2>
+                <h2 className="text-2xl font-bold">플레이리스트</h2>
               </div>
               <Button
                 size="sm"
                 variant="gradient"
                 onClick={() => {
-                  if (playlistTracks.length > 0) {
-                    musicPlayer.playPlaylist(playlistTracks, 0);
+                  if (post.playlist.length > 0) {
+                    const tracks = post.playlist.map(toMusicTrack);
+                    musicPlayer.playPlaylist(tracks, 0, { crossfadeDuration: 5000, preloadOffset: 15 });
                   }
                 }}
               >
@@ -225,21 +242,18 @@ export function PostDetail({
               }))}
               currentTrackId={musicPlayer.currentTrack?.id}
               isPlaying={musicPlayer.isPlaying}
-              onTrackSelect={(trackId) => {
-                const track = post.playlist.find(t => t.id === trackId);
-                if (track) {
-                  handlePlayMusic({
-                    id: track.id,
-                    version: track.version,
-                    title: track.title,
-                    fileUrl: track.fileUrl,
-                    genre: track.genre ?? null,
-                    mood: track.mood ?? null,
-                    duration: track.duration ?? null,
-                  });
-                }
+              onTrackSelect={async (trackId) => {
+                const trackIndex = post.playlist.findIndex(t => t.id === trackId);
+                if (trackIndex === -1) return;
+                const tracks = post.playlist.map(toMusicTrack);
+                await musicPlayer.playPlaylist(tracks, trackIndex, {
+                  crossfadeDuration: 5000,
+                  preloadOffset: 15
+                });
               }}
-              onPlayPause={musicPlayer.togglePlayPause}
+              onPlayPause={() => {
+                musicPlayer.togglePlayPause();
+              }}
               showHeader={false}
             />
           </div>
@@ -278,15 +292,15 @@ export function PostDetail({
       {musicPlayer.currentTrack && (
         <MusicPlayerBar
           trackUrl={musicPlayer.currentTrack.fileUrl}
-          trackTitle={`${post.journey.bookTitle} - ${musicPlayer.currentTrack.title}`}
-          trackVersion={(musicPlayer.currentTrack.version ?? 1).toString()}
+          trackTitle={musicPlayer.currentTrack.title}
+          trackVersion={musicPlayer.currentTrack.version?.toString() || ''}
           bookCoverUrl={post.journey.bookCoverUrl ?? undefined}
           genre={musicPlayer.currentTrack.genre ?? undefined}
           mood={musicPlayer.currentTrack.mood ?? undefined}
           onClose={handleClosePlayer}
           playlistMode={musicPlayer.playlistMode}
           currentTrackIndex={musicPlayer.currentTrackIndex}
-          totalTracks={playlistTracks.length}
+          totalTracks={musicPlayer.playlistLength}
           onPrevious={musicPlayer.skipToPrevious}
           onNext={musicPlayer.skipToNext}
           hasNext={musicPlayer.hasNext}
@@ -295,6 +309,7 @@ export function PostDetail({
           externalCurrentTime={musicPlayer.currentTime}
           externalDuration={musicPlayer.duration}
           onTogglePlayPause={musicPlayer.togglePlayPause}
+          onSeek={musicPlayer.seek}
         />
       )}
     </div>

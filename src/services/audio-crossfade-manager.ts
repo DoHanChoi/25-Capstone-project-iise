@@ -732,66 +732,76 @@ export class AudioCrossfadeManager {
    */
   public async skipToNext(crossfadeDuration: number = 5000, preloadOffset: number = 15) {
     if (this.currentIndex >= this.playlist.length - 1) return;
+    await this.switchToIndex(this.currentIndex + 1, crossfadeDuration, preloadOffset);
+  }
+  
+  public async skipToPrevious(crossfadeDuration: number = 5000, preloadOffset: number = 15) {
+    if (this.currentAudio && this.currentAudio.currentTime > 5) {
+      // Restart current track if > 5s
+      this.currentAudio.currentTime = 0;
+      return;
+    }
 
-    this.currentIndex++;
-    const track = this.playlist[this.currentIndex];
+    if (this.currentIndex <= 0) return;
+    await this.switchToIndex(this.currentIndex - 1, crossfadeDuration, preloadOffset);
+  }
+  
+  /**
+   * ?? ???? ?? (???? ??)
+   */
+  public async skipToIndex(targetIndex: number, crossfadeDuration: number = 5000, preloadOffset: number = 15) {
+    await this.switchToIndex(targetIndex, crossfadeDuration, preloadOffset);
+  }
 
-    // ✅ 이벤트 리스너 정리
+  /**
+   * ?? ?? ??
+   */
+  public seek(positionSeconds: number) {
+    if (!this.currentAudio) return;
+    const duration = this.currentAudio.duration || this.playlist[this.currentIndex]?.duration || 0;
+    const clamped = Math.max(0, duration ? Math.min(positionSeconds, duration) : positionSeconds);
+    this.currentAudio.currentTime = clamped;
+    this.onTimeUpdate?.(clamped, duration);
+  }
+
+  /**
+   * ?? ??? ?? ?? (?? ??? ??? ??)
+   */
+  private async switchToIndex(targetIndex: number, crossfadeDuration: number = 5000, preloadOffset: number = 15) {
+    if (targetIndex < 0 || targetIndex >= this.playlist.length) {
+      throw new Error(`Invalid track index: ${targetIndex}`);
+    }
+
+    const targetTrack = this.playlist[targetIndex];
+
+    // ?? ? ?? ?? ? ?? ??? ??
+    this.abortPendingLoads();
+    this.cleanupAudioListeners(this.nextAudio);
     this.cleanupAudioListeners(this.currentAudio);
 
-    // Quick fade (500ms)
+    // ?? ??? ??
     if (this.currentAudio) {
       this.currentAudio.pause();
       this.currentAudio.currentTime = 0;
       this.currentAudio.src = '';
     }
 
-    await this.loadTrack(track.url, false);
+    await this.loadTrack(targetTrack.url, false);
+
     if (this.currentAudio) {
       await this.currentAudio.play();
-      this.onTrackChange?.(this.currentIndex, track);
-
-      // ✅ Setup auto-advance for time updates and next track preloading
+      this.currentIndex = targetIndex;
+      this.isPlaying = true;
+      this.onTrackChange?.(this.currentIndex, targetTrack);
       this.setupAutoAdvance(crossfadeDuration, preloadOffset);
     }
   }
   
   /**
-   * 이전 트랙
+   * ??? ?? ???? ??
+   * ?Critical Issue #11: ???? ?????? ?? ???? ???? ??
    */
-  public async skipToPrevious(crossfadeDuration: number = 5000, preloadOffset: number = 15) {
-    if (this.currentAudio && this.currentAudio.currentTime > 5) {
-      // Restart current track if > 5s
-      this.currentAudio.currentTime = 0;
-    } else if (this.currentIndex > 0) {
-      this.currentIndex--;
-      const track = this.playlist[this.currentIndex];
-
-      // ✅ 이벤트 리스너 정리
-      this.cleanupAudioListeners(this.currentAudio);
-
-      if (this.currentAudio) {
-        this.currentAudio.pause();
-        this.currentAudio.currentTime = 0;
-        this.currentAudio.src = '';
-      }
-
-      await this.loadTrack(track.url, false);
-      if (this.currentAudio) {
-        await this.currentAudio.play();
-        this.onTrackChange?.(this.currentIndex, track);
-
-        // ✅ Setup auto-advance for time updates and next track preloading
-        this.setupAutoAdvance(crossfadeDuration, preloadOffset);
-      }
-    }
-  }
-  
-  /**
-   * 대기 중인 다운로드 중단
-   * ✅ Critical Issue #11: 사용자가 플레이리스트 전환 시 불필요한 다운로드 중단
-   */
-  private abortPendingLoads() {
+private abortPendingLoads() {
     if (this.nextAudio && this.nextAudio.readyState < 2) {
       // readyState < 2 = 로드 중
       console.log('🛡️ Aborting pending download');

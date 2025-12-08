@@ -31,6 +31,7 @@ interface MusicPlayerBarProps {
   externalCurrentTime?: number;
   externalDuration?: number;
   onTogglePlayPause?: () => void;
+  onSeek?: (seconds: number) => void;
 }
 
 export function MusicPlayerBar({
@@ -52,6 +53,7 @@ export function MusicPlayerBar({
   externalCurrentTime,
   externalDuration,
   onTogglePlayPause,
+  onSeek,
 }: MusicPlayerBarProps) {
   // ✅ Critical Issue #12: useMusicPlayer에서 볼륨 상태 가져오기
   const { volume, isMuted, setVolume, toggleMute } = useMusicPlayer();
@@ -63,6 +65,19 @@ export function MusicPlayerBar({
   const [isHoveringProgress, setIsHoveringProgress] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // 외부 상태를 로컬 상태에 반영 (슬라이더 즉각 반응용)
+  useEffect(() => {
+    if (externalCurrentTime !== undefined) {
+      setCurrentTime(externalCurrentTime);
+    }
+  }, [externalCurrentTime]);
+
+  useEffect(() => {
+    if (externalDuration !== undefined) {
+      setDuration(externalDuration);
+    }
+  }, [externalDuration]);
 
   // ✅ UNIFIED: 항상 외부 상태를 사용 (useMusicPlayer가 모든 재생 관리)
   useEffect(() => {
@@ -79,14 +94,13 @@ export function MusicPlayerBar({
   };
 
   const handleSeek = (value: number[]) => {
-    // ✅ seek는 단일 트랙 모드에서만 허용 (플레이리스트에서는 크로스페이드 간섭 방지)
-    if (playlistMode) {
-      toast.warning('플레이리스트 모드에서는 탐색이 제한됩니다.');
+    const newTime = value[0];
+    if (!onSeek) {
+      toast.info('재생 컴트롤이 아직 연결되지 않았습니다.');
       return;
     }
-
-    // 단일 트랙 모드에서도 외부 상태 기반이므로 seek는 제한
-    toast.info('현재 재생 중인 트랙은 탐색을 지원하지 않습니다.');
+    setCurrentTime(newTime);
+    onSeek(newTime);
   };
 
   const handleSeekStart = () => {
@@ -116,8 +130,8 @@ export function MusicPlayerBar({
 
   // ✅ UNIFIED: 항상 외부 상태 사용 (useMusicPlayer가 모든 상태 관리)
   const displayIsPlaying = externalIsPlaying ?? false;
-  const displayCurrentTime = externalCurrentTime ?? 0;
-  const displayDuration = externalDuration ?? 0;
+  const displayCurrentTime = externalCurrentTime ?? currentTime;
+  const displayDuration = externalDuration ?? duration;
 
   return (
     <AnimatePresence>
