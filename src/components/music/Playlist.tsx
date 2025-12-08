@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, Music, Disc3, Sparkles, Clock } from 'lucide-react';
 import { m } from 'framer-motion';
+import { useEffect, useState } from 'react';
 
 interface MusicTrack {
   id: string;
@@ -31,12 +32,46 @@ export function Playlist({
   onPlayPause,
   showHeader = true,
 }: PlaylistProps) {
+  const [durations, setDurations] = useState<Record<string, number>>({});
+
   const formatDuration = (seconds?: number) => {
     if (!seconds) return '--:--';
     const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const secs = Math.round(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // 메타데이터에서 실제 길이를 확보 (duration이 없거나 1초 이하일 때만)
+  useEffect(() => {
+    const toMeasure = tracks.filter(
+      (t) => !t.duration || t.duration <= 1 || !durations[t.id]
+    );
+    if (toMeasure.length === 0) return;
+
+    const controllers: HTMLAudioElement[] = [];
+
+    toMeasure.forEach((track) => {
+      if (!track.url) return;
+      const audio = new Audio();
+      audio.preload = 'metadata';
+      const handleLoaded = () => {
+        if (audio.duration && Number.isFinite(audio.duration)) {
+          setDurations((prev) => ({ ...prev, [track.id]: Math.round(audio.duration) }));
+        }
+      };
+      audio.addEventListener('loadedmetadata', handleLoaded);
+      audio.src = track.url;
+      audio.load();
+      controllers.push(audio);
+    });
+
+    return () => {
+      controllers.forEach((audio) => {
+        audio.pause();
+        audio.src = '';
+      });
+    };
+  }, [tracks, durations]);
 
   const content = (
     <div className="space-y-3">
@@ -153,7 +188,7 @@ export function Playlist({
                 <div className="shrink-0 flex items-center gap-2 text-gray-500">
                   <Clock className="w-4 h-4" />
                   <span className="text-sm font-medium tabular-nums">
-                    {formatDuration(track.duration)}
+                    {formatDuration(durations[track.id] ?? track.duration)}
                   </span>
                 </div>
               </div>
