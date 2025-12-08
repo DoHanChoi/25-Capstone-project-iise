@@ -36,6 +36,7 @@ interface MusicTrack {
   mood: string | null;
   tempo: string | null;
   file_url: string;
+  duration?: number | null;
   description: string | null;
   status: string;
   created_at: string;
