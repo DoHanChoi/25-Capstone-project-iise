@@ -22,18 +22,6 @@ interface PostDetailProps {
   currentUserId?: string;
 }
 
-interface MusicTrack {
-  id: string;
-  version: number;
-  title: string;
-  fileUrl: string;
-  genre: string | null;
-  mood: string | null;
-  duration: number | null;
-  tempo?: number | null;
-  logType?: string | null;
-}
-
 export function PostDetail({
   post,
   currentUserId,
@@ -41,35 +29,25 @@ export function PostDetail({
   const musicPlayer = useMusicPlayer();
   const [comments, setComments] = useState<CommentDto[]>(post.comments);
 
-  const playlistTracks = useMemo<MusicTrack[]>(() => (
-    post.playlist.map((track) => ({
-      id: track.id,
-      version: track.version,
-      title: track.title,
-      fileUrl: track.fileUrl,
-      genre: track.genre ?? null,
-      mood: track.mood ?? null,
-      duration: track.duration ?? 0,
-      tempo: (track as any).tempo ?? null,
-      logType: (track as any).logType ?? null,
-    }))
-  ), [post.playlist]);
+  const playlistTracks = useMemo<PostDetailDto['playlist']>(() => post.playlist, [post.playlist]);
 
-  const toMusicTrack = (track: MusicTrack) => ({
+  const toMusicTrack = (track: PostDetailDto['playlist'][number]) => ({
     id: track.id,
     title: `${post.journey.bookTitle} - ${track.title}`,
     fileUrl: track.fileUrl,
     duration: track.duration || 0,
     genre: track.genre ?? undefined,
     mood: track.mood ?? undefined,
-    tempo: track.tempo ?? undefined,
+    tempo: (track as any).tempo ?? undefined,
     artist: post.journey.bookAuthor,
     albumCover: post.journey.bookCoverUrl || undefined,
     version: Number(track.version),
-    logType: track.logType ?? `v${track.version ?? 0}`,
+    logType: (track as any).logType ?? `v${track.version ?? 0}`,
   });
 
-  const handlePlayMusic = async (track: MusicTrack) => {
+  const handlePlayMusic = async (trackId: string) => {
+    const track = playlistTracks.find(t => t.id === trackId);
+    if (!track) return;
     await musicPlayer.playTrack(toMusicTrack(track));
   };
 
