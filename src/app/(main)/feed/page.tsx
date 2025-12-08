@@ -11,7 +11,7 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { PostDetailDto, PostDto } from '@/types/dto/post.dto';
-import { MusicTrack, useMusicPlayer } from '@/hooks/useMusicPlayer';
+import { useMusicPlayer } from '@/hooks/useMusicPlayer';
 import { MusicPlayerBar } from '@/components/music/MusicPlayerBar';
 
 interface PaginationInfo {
@@ -161,16 +161,14 @@ export default function FeedPage() {
         return;
       }
 
-      const playlistTracks: MusicTrack[] = detail.playlist.map((track) => ({
+      const playlistTracks = detail.playlist.map((track) => ({
         id: track.id,
         version: track.version,
         title: track.title,
         fileUrl: track.fileUrl,
-        genre: track.genre ?? undefined,
-        mood: track.mood ?? undefined,
-        tempo: track.tempo ?? undefined,
+        genre: track.genre ?? null,
+        mood: track.mood ?? null,
         duration: track.duration ?? 0,
-        logType: track.logType,
       }));
 
       await musicPlayer.playPlaylist(playlistTracks, 0);
