@@ -678,6 +678,16 @@ export class AudioCrossfadeManager {
     };
 
     const handleEnded = () => {
+      // 남은 트랙이 있으면 즉시 다음 트랙으로 진행
+      if (this.currentIndex < this.playlist.length - 1) {
+        this.log('▶️ Current track ended early, advancing to next');
+        this.switchToIndex(this.currentIndex + 1, crossfadeDuration, preloadOffset).catch(err => {
+          console.error('Failed to advance after ended event:', err);
+          this.onError?.(err as Error);
+        });
+        return;
+      }
+
       if (this.currentIndex >= this.playlist.length - 1) {
         this.log('🏁 Playlist ended');
 
