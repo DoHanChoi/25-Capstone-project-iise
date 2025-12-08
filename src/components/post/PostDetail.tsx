@@ -55,18 +55,18 @@ export function PostDetail({
     }))
   ), [post.playlist]);
 
-  const toMusicTrack = (track: PostDetailDto['playlist'][number]) => ({
+  const toMusicTrack = (track: MusicTrack) => ({
     id: track.id,
     title: `${post.journey.bookTitle} - ${track.title}`,
     fileUrl: track.fileUrl,
     duration: track.duration || 0,
     genre: track.genre ?? undefined,
     mood: track.mood ?? undefined,
-    tempo: (track as any).tempo ?? undefined,
+    tempo: track.tempo ?? undefined,
     artist: post.journey.bookAuthor,
     albumCover: post.journey.bookCoverUrl || undefined,
     version: Number(track.version),
-    logType: (track as any).logType ?? undefined,
+    logType: track.logType ?? `v${track.version ?? 0}`,
   });
 
   const handlePlayMusic = async (track: MusicTrack) => {
