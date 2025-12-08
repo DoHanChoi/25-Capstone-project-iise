@@ -12,9 +12,10 @@ import { BookCover } from '@/components/book/BookCover';
 import { Playlist } from '@/components/music/Playlist';
 import { MusicPlayerBar } from '@/components/music/MusicPlayerBar';
 import { Star, Calendar, Music } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { m } from 'framer-motion';
 import { PostDetailDto, CommentDto } from '@/types/dto/post.dto';
+import { useMusicPlayer } from '@/hooks/useMusicPlayer';
 
 interface PostDetailProps {
   post: PostDetailDto;
@@ -23,7 +24,7 @@ interface PostDetailProps {
 
 interface MusicTrack {
   id: string;
-  version: string;
+  version: number;
   title: string;
   fileUrl: string;
   genre: string | null;
@@ -35,15 +36,29 @@ export function PostDetail({
   post,
   currentUserId,
 }: PostDetailProps) {
-  const [currentTrack, setCurrentTrack] = useState<MusicTrack | null>(null);
   const [comments, setComments] = useState<CommentDto[]>(post.comments);
+  const musicPlayer = useMusicPlayer();
+
+  const playlistTracks = useMemo<MusicTrack[]>(() => (
+    post.playlist.map((track) => ({
+      id: track.id,
+      version: track.version,
+      title: track.title,
+      fileUrl: track.fileUrl,
+      genre: track.genre ?? null,
+      mood: track.mood ?? null,
+      duration: track.duration ?? 0,
+    }))
+  ), [post.playlist]);
 
   const handlePlayMusic = (track: MusicTrack) => {
-    setCurrentTrack(track);
+    if (playlistTracks.length === 0) return;
+    const startIndex = playlistTracks.findIndex((t) => t.id === track.id);
+    musicPlayer.playPlaylist(playlistTracks, startIndex >= 0 ? startIndex : 0);
   };
 
   const handleClosePlayer = () => {
-    setCurrentTrack(null);
+    musicPlayer.clearPlaylist();
   };
 
   const handleComment = () => {
@@ -189,17 +204,8 @@ export function PostDetail({
                 size="sm"
                 variant="gradient"
                 onClick={() => {
-                  if (post.playlist.length > 0) {
-                    const firstTrack = post.playlist[0];
-                    handlePlayMusic({
-                      id: firstTrack.id,
-                      version: firstTrack.version.toString(),
-                      title: firstTrack.title,
-                      fileUrl: firstTrack.fileUrl,
-                      genre: firstTrack.genre ?? null,
-                      mood: firstTrack.mood ?? null,
-                      duration: firstTrack.duration ?? null,
-                    });
+                  if (playlistTracks.length > 0) {
+                    musicPlayer.playPlaylist(playlistTracks, 0);
                   }
                 }}
               >
@@ -217,14 +223,14 @@ export function PostDetail({
                 mood: track.mood,
                 duration: track.duration,
               }))}
-              currentTrackId={currentTrack?.id}
-              isPlaying={!!currentTrack}
+              currentTrackId={musicPlayer.currentTrack?.id}
+              isPlaying={musicPlayer.isPlaying}
               onTrackSelect={(trackId) => {
                 const track = post.playlist.find(t => t.id === trackId);
                 if (track) {
                   handlePlayMusic({
                     id: track.id,
-                    version: track.version.toString(),
+                    version: track.version,
                     title: track.title,
                     fileUrl: track.fileUrl,
                     genre: track.genre ?? null,
@@ -233,12 +239,7 @@ export function PostDetail({
                   });
                 }
               }}
-              onPlayPause={() => {
-                if (currentTrack) {
-                  // Dispatch custom event to control the MusicPlayerBar
-                  window.dispatchEvent(new CustomEvent('togglePlayPause'));
-                }
-              }}
+              onPlayPause={musicPlayer.togglePlayPause}
               showHeader={false}
             />
           </div>
@@ -274,15 +275,26 @@ export function PostDetail({
       </Card>
 
       {/* Music Player Bar */}
-      {currentTrack && (
+      {musicPlayer.currentTrack && (
         <MusicPlayerBar
-          trackUrl={currentTrack.fileUrl}
-          trackTitle={`${post.journey.bookTitle} - ${currentTrack.title}`}
-          trackVersion={currentTrack.version}
+          trackUrl={musicPlayer.currentTrack.fileUrl}
+          trackTitle={`${post.journey.bookTitle} - ${musicPlayer.currentTrack.title}`}
+          trackVersion={(musicPlayer.currentTrack.version ?? 1).toString()}
           bookCoverUrl={post.journey.bookCoverUrl ?? undefined}
-          genre={currentTrack.genre ?? undefined}
-          mood={currentTrack.mood ?? undefined}
+          genre={musicPlayer.currentTrack.genre ?? undefined}
+          mood={musicPlayer.currentTrack.mood ?? undefined}
           onClose={handleClosePlayer}
+          playlistMode={musicPlayer.playlistMode}
+          currentTrackIndex={musicPlayer.currentTrackIndex}
+          totalTracks={playlistTracks.length}
+          onPrevious={musicPlayer.skipToPrevious}
+          onNext={musicPlayer.skipToNext}
+          hasNext={musicPlayer.hasNext}
+          hasPrevious={musicPlayer.hasPrevious}
+          externalIsPlaying={musicPlayer.isPlaying}
+          externalCurrentTime={musicPlayer.currentTime}
+          externalDuration={musicPlayer.duration}
+          onTogglePlayPause={musicPlayer.togglePlayPause}
         />
       )}
     </div>
