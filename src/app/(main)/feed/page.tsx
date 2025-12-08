@@ -166,8 +166,8 @@ export default function FeedPage() {
         version: track.version,
         title: track.title,
         fileUrl: track.fileUrl,
-        genre: track.genre ?? null,
-        mood: track.mood ?? null,
+        genre: track.genre || undefined,
+        mood: track.mood || undefined,
         duration: track.duration ?? 0,
       }));
 
