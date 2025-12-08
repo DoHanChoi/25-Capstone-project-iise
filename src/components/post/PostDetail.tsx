@@ -201,7 +201,7 @@ export function PostDetail({
                 onClick={() => {
                   if (post.playlist.length > 0) {
                     const tracks = post.playlist.map(toMusicTrack);
-                    musicPlayer.playPlaylist(tracks, 0, { crossfadeDuration: 5000, preloadOffset: 15 });
+                    musicPlayer.playPlaylist(tracks, 0, { crossfadeDuration: 0, preloadOffset: 0 });
                   }
                 }}
               >
@@ -226,8 +226,8 @@ export function PostDetail({
                 if (trackIndex === -1) return;
                 const tracks = post.playlist.map(toMusicTrack);
                 await musicPlayer.playPlaylist(tracks, trackIndex, {
-                  crossfadeDuration: 5000,
-                  preloadOffset: 15
+                  crossfadeDuration: 0,
+                  preloadOffset: 0
                 });
               }}
               onPlayPause={() => {

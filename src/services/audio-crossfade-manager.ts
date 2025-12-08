@@ -639,42 +639,41 @@ export class AudioCrossfadeManager {
         });
       }
 
-      // 크로스페이드 시작 시점
-      const crossfadeStart = (crossfadeDuration / 1000) + 1; // 1초 여유
-      if (
-        this.nextAudio &&
-        timeRemaining <= crossfadeStart &&
-        !this.isCrossfading
-      ) {
-        // ✅ Critical Issue #11: 크로스페이드 직전 실제 다운로드 시작
-        if (this.nextAudio.preload === 'metadata') {
-          this.nextAudio.preload = 'auto';
-          this.nextAudio.load();
-          console.log('✅ Next track: switching to full download');
-        }
-
-        const currentTrack = this.playlist[this.currentIndex];
-        const nextTrack = this.playlist[this.currentIndex + 1];
-
-        const adaptiveDuration = this.calculateCrossfadeDuration(
-          currentTrack,
-          nextTrack,
-          crossfadeDuration
-        );
-
-        this.crossfade(adaptiveDuration).then(() => {
-          this.currentIndex++;
-          this.onTrackChange?.(this.currentIndex, nextTrack);
-
-          // Continue to next track
-          if (this.currentIndex < this.playlist.length - 1) {
-            this.setupAutoAdvance(crossfadeDuration, preloadOffset);
-          }
-        }).catch(error => {
-          console.error('Crossfade failed:', error);
-          this.onError?.(error);
-        });
+    // 크로스페이드 사용 시에만 동작 (현재 기본 비활성화)
+    const crossfadeStart = (crossfadeDuration / 1000) + 1; // 1초 여유
+    if (
+      crossfadeDuration > 0 &&
+      this.nextAudio &&
+      timeRemaining <= crossfadeStart &&
+      !this.isCrossfading
+    ) {
+      if (this.nextAudio.preload === 'metadata') {
+        this.nextAudio.preload = 'auto';
+        this.nextAudio.load();
+        console.log('✅ Next track: switching to full download');
       }
+
+      const currentTrack = this.playlist[this.currentIndex];
+      const nextTrack = this.playlist[this.currentIndex + 1];
+
+      const adaptiveDuration = this.calculateCrossfadeDuration(
+        currentTrack,
+        nextTrack,
+        crossfadeDuration
+      );
+
+      this.crossfade(adaptiveDuration).then(() => {
+        this.currentIndex++;
+        this.onTrackChange?.(this.currentIndex, nextTrack);
+
+        if (this.currentIndex < this.playlist.length - 1) {
+          this.setupAutoAdvance(crossfadeDuration, preloadOffset);
+        }
+      }).catch(error => {
+        console.error('Crossfade failed:', error);
+        this.onError?.(error);
+      });
+    }
     };
 
     const handleEnded = () => {

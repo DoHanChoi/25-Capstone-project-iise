@@ -172,7 +172,10 @@ export default function FeedPage() {
         duration: track.duration && track.duration > 0 ? track.duration : 180,
       }));
 
-      await musicPlayer.playPlaylist(playlistTracks, 0);
+      await musicPlayer.playPlaylist(playlistTracks, 0, {
+        crossfadeDuration: 0,
+        preloadOffset: 0,
+      });
       setPlayerContext({
         bookTitle: detail.journey.bookTitle,
         bookCoverUrl: detail.journey.bookCoverUrl ?? null,

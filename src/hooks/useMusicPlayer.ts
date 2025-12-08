@@ -41,8 +41,9 @@ export function useMusicPlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [playlistMode, setPlaylistMode] = useState(false);
-  const [crossfadeEnabled, setCrossfadeEnabled] = useState(true);
-  const [crossfadeDuration, setCrossfadeDuration] = useState(5000); // 5초 기본값
+  // 크로스페이드 기본 비활성화
+  const [crossfadeEnabled, setCrossfadeEnabled] = useState(false);
+  const [crossfadeDuration, setCrossfadeDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   // ✅ Critical Issue #12: 볼륨 상태 추가

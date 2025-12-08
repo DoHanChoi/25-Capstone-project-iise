@@ -584,8 +584,8 @@ export default function JourneyDetailPage() {
 
                           // ✅ Play playlist with crossfade
                           await musicPlayer.playPlaylist(tracks, 0, {
-                            crossfadeDuration: 5000,
-                            preloadOffset: 15
+                            crossfadeDuration: 0,
+                            preloadOffset: 0
                           });
                           // ✅ playlistMode는 useMusicPlayer가 자동 관리
                         }
@@ -628,8 +628,8 @@ export default function JourneyDetailPage() {
 
                         // 플레이리스트 재생 (선택한 트랙부터 시작)
                         await musicPlayer.playPlaylist(tracks, trackIndex, {
-                          crossfadeDuration: 5000,
-                          preloadOffset: 15
+                          crossfadeDuration: 0,
+                          preloadOffset: 0
                         });
                       }
                     }}
